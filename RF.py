@@ -8,20 +8,13 @@ import base64
 
 def RF(df):
     mean_temp = df['Mean Temperature (deg C)']
-
-    # One-hot encode the 'Station' column
     df = pd.get_dummies(df, columns=['Station'], drop_first=True)
-
     lags = 7
     lagged_features = pd.DataFrame()
     for i in range(1, lags + 1):
         lagged_features[f'lag_{i}'] = mean_temp.shift(i)
-
-    # Drop the rows with NaN values
     lagged_features = lagged_features.dropna()
     mean_temp = mean_temp[lagged_features.index]
-
-    # Combine lagged features with other predictors
     predictors = df.loc[lagged_features.index].drop(columns=['Mean Temperature (deg C)'])
     predictors = pd.concat([predictors, lagged_features], axis=1)
 
@@ -34,16 +27,10 @@ def RF(df):
     rf = RandomForestRegressor(n_estimators=100, random_state=42)
     rf.fit(train_X, train_y)
 
-    # Predict the mean temperature
     predictions = rf.predict(test_X)
-
-    # Calculate RMSFE
     rmsfe = np.sqrt(mean_squared_error(test_y, predictions))
 
-    # Get feature importances
     feature_importances = rf.feature_importances_
-
-    # Create a DataFrame for feature importances
     features_df = pd.DataFrame({
         'Feature': train_X.columns,
         'Importance': feature_importances
@@ -62,7 +49,7 @@ def RF(df):
     def save_plot(fig, filename):
         figfile = BytesIO()
         fig.savefig(figfile, format='png')
-        figfile.seek(0)  # rewind to beginning of file
+        figfile.seek(0)
         figdata_png = base64.b64encode(figfile.getvalue()).decode('utf-8')
         html_str = f'<img src="data:image/png;base64,{figdata_png}" />'
         return html_str
